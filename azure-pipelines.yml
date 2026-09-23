@@ -1,0 +1,46 @@
+trigger:
+- main
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+variables:
+  dockerRegistryServiceConnection: 'docker-hub-connection'
+  imageRepository: 'artur310/lab1-api'
+  tag: 'latest'
+
+stages:
+- stage: BuildAndTest
+  displayName: 'Build and Run Unit Tests'
+  jobs:
+  - job: Test
+    displayName: 'Test with pytest'
+    steps:
+    - task: UsePythonVersion@0
+      inputs:
+        versionSpec: '3.10'
+    - script: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+      displayName: 'Install dependencies'
+    - script: |
+        pytest
+      displayName: 'Run unit tests'
+
+- stage: Docker
+  displayName: 'Build and Push Docker Image'
+  dependsOn: BuildAndTest
+  condition: succeeded()
+  jobs:
+  - job: BuildAndPush
+    displayName: 'Build and Push'
+    steps:
+    - task: Docker@2
+      displayName: 'Build and push an image'
+      inputs:
+        command: buildAndPush
+        repository: $(imageRepository)
+        dockerfile: '**/Dockerfile'
+        containerRegistry: $(dockerRegistryServiceConnection)
+        tags: |
+          $(tag)
