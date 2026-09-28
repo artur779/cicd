@@ -1,7 +1,7 @@
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 
-app = FastAPI(title="Lab 1 API", description="CI/CD API", version="1.0.0")
+app = FastAPI(title="Lab 1", description="CI/CD API", version="1.0.0")
 
 class Item(BaseModel):
     id: int
