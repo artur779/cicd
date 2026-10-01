@@ -29,3 +29,14 @@ jobs:
 
       - name: Run unit tests
         run: pytest
+
+  call-docker-pack-n-push:
+    needs: build-n-test
+    uses: ./.github/workflows/docker-pack-n-push.yml
+    with:
+      repository_name: 'artur310/lab1-api'
+      image_tag: 'latest'
+      push_to_hub: ${{ github.ref == 'refs/heads/main' }}
+    secrets:
+      DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+      DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
