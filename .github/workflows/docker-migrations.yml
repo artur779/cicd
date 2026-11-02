@@ -1,0 +1,40 @@
+name: Docker Migrations Pack and Push
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'migrations/**'
+      - 'models.py'
+      - 'requirements.txt'
+      - '.github/workflows/docker-migrations.yml'
+
+  workflow_dispatch:
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Build and push migrations image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: migrations/Dockerfile
+          push: true
+          tags: |
+            artur310/lab1-migrations:latest
+            artur310/lab1-migrations:${{ github.sha }}
