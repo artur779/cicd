@@ -1,4 +1,5 @@
 
+apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: {{ include "lab4.fullname" . }}-backend
@@ -14,30 +15,6 @@ spec:
       labels:
         app: {{ include "lab4.fullname" . }}-backend
     spec:
-      initContainers:
-        - name: wait-for-migrations
-          image: postgres:16
-          env:
-            - name: PGPASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: {{ include "lab4.fullname" . }}-secret
-                  key: POSTGRES_PASSWORD
-          command:
-            - sh
-            - -c
-            - |
-              until pg_isready -h {{ include "lab4.fullname" . }}-postgres -p {{ .Values.postgres.port }} -U {{ .Values.postgres.username }}; do
-                echo "Очікування PostgreSQL..."
-                sleep 3
-              done
-
-              until psql -h {{ include "lab4.fullname" . }}-postgres -p {{ .Values.postgres.port }} -U {{ .Values.postgres.username }} -d {{ .Values.postgres.database }} -tAc "SELECT to_regclass('public.items')" | grep -q items; do
-                echo "Очікування створення таблиці items..."
-                sleep 3
-              done
-
-              echo "Міграції завершені. Запускаємо Backend."
       containers:
         - name: backend
           image: "{{ .Values.backend.image.repository }}:{{ .Values.backend.image.tag }}"
@@ -64,4 +41,3 @@ spec:
               port: {{ .Values.backend.port }}
             initialDelaySeconds: 20
             periodSeconds: 10
-{{- end }}
