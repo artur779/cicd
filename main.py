@@ -12,7 +12,7 @@ db = []
 
 @app.get("/")
 def root():
-    return {"message": "API работает! Перейдите по адресу /docs для просмотра Swagger UI/."}
+    return {"message": "API работает! Перейдите по адресу /docs для просмотра Swagger UI."}
 
 @app.get("/api/items", response_model=list[Item])
 def get_items():
