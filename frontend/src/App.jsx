@@ -77,7 +77,7 @@ function App() {
           body: JSON.stringify({
             id: editingId,
             name: trimmedName,
-            description: description.trim() || null
+            description: description.trim()
           })
         })
       } else {
@@ -96,7 +96,7 @@ function App() {
           body: JSON.stringify({
             id: nextId,
             name: trimmedName,
-            description: description.trim() || null
+            description: description.trim()
           })
         })
       }
