@@ -1,0 +1,43 @@
+
+backend:
+  enabled: true
+  image:
+    repository: artur310/lab1-api
+    tag: latest
+    pullPolicy: Always
+  replicas: 1
+  port: 8000
+
+frontend:
+  enabled: true
+  image:
+    repository: artur310/lab1-frontend
+    tag: latest
+    pullPolicy: Always
+  replicas: 1
+  port: 80
+
+migrations:
+  enabled: true
+  image:
+    repository: artur310/lab1-migrations
+    tag: latest
+    pullPolicy: Always
+
+postgres:
+  image: postgres:16
+  replicas: 1
+  database: lab4_db
+  username: postgres
+  password: postgres
+  port: 5432
+  storage: 1Gi
+
+storage:
+  size: 1Gi
+  storageClassName: standard
+
+ingress:
+  enabled: true
+  className: nginx
+  host: webapp.lab.test

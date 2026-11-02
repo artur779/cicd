@@ -1,0 +1,6 @@
+apiVersion: v2
+name: lab4
+description: Helm Chart для розгортання вебзастосунку з FastAPI, React та PostgreSQL
+type: application
+version: 0.1.0
+appVersion: "1.0.0"

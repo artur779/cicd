@@ -1,0 +1,67 @@
+
+kind: Deployment
+metadata:
+  name: {{ include "lab4.fullname" . }}-backend
+  labels:
+    {{- include "lab4.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.backend.replicas }}
+  selector:
+    matchLabels:
+      app: {{ include "lab4.fullname" . }}-backend
+  template:
+    metadata:
+      labels:
+        app: {{ include "lab4.fullname" . }}-backend
+    spec:
+      initContainers:
+        - name: wait-for-migrations
+          image: postgres:16
+          env:
+            - name: PGPASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "lab4.fullname" . }}-secret
+                  key: POSTGRES_PASSWORD
+          command:
+            - sh
+            - -c
+            - |
+              until pg_isready -h {{ include "lab4.fullname" . }}-postgres -p {{ .Values.postgres.port }} -U {{ .Values.postgres.username }}; do
+                echo "Очікування PostgreSQL..."
+                sleep 3
+              done
+
+              until psql -h {{ include "lab4.fullname" . }}-postgres -p {{ .Values.postgres.port }} -U {{ .Values.postgres.username }} -d {{ .Values.postgres.database }} -tAc "SELECT to_regclass('public.items')" | grep -q items; do
+                echo "Очікування створення таблиці items..."
+                sleep 3
+              done
+
+              echo "Міграції завершені. Запускаємо Backend."
+      containers:
+        - name: backend
+          image: "{{ .Values.backend.image.repository }}:{{ .Values.backend.image.tag }}"
+          imagePullPolicy: {{ .Values.backend.image.pullPolicy }}
+          ports:
+            - containerPort: {{ .Values.backend.port }}
+          env:
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "lab4.fullname" . }}-secret
+                  key: POSTGRES_PASSWORD
+            - name: DATABASE_URL
+              value: "postgresql+psycopg2://{{ .Values.postgres.username }}:$(POSTGRES_PASSWORD)@{{ include "lab4.fullname" . }}-postgres:{{ .Values.postgres.port }}/{{ .Values.postgres.database }}"
+          readinessProbe:
+            httpGet:
+              path: /
+              port: {{ .Values.backend.port }}
+            initialDelaySeconds: 10
+            periodSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /
+              port: {{ .Values.backend.port }}
+            initialDelaySeconds: 20
+            periodSeconds: 10
+{{- end }}
