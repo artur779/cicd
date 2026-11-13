@@ -38,9 +38,11 @@ jobs:
 
     steps:
       - name: Checkout repository
+        if: github.event_name != 'workflow_dispatch'
         uses: actions/checkout@v4
 
-      - name: Detect changes
+      - name: Detect changed files
+        if: github.event_name != 'workflow_dispatch'
         id: filter
         uses: dorny/paths-filter@v3
         with:
@@ -64,7 +66,7 @@ jobs:
               - '.github/workflows/ci.yml'
 
   # ==========================================
-  # 2. PYTHON CI - BACKEND TESTS
+  # 2. PYTHON CI
   # ==========================================
   test-backend:
     name: Python CI - Backend Tests
@@ -103,7 +105,7 @@ jobs:
         with:
           python-version: '3.12'
 
-      - name: Install backend dependencies
+      - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
@@ -130,40 +132,7 @@ jobs:
         run: pytest -v
 
   # ==========================================
-  # 3. FRONTEND CI - BUILD
-  # ==========================================
-  build-frontend:
-    name: Frontend CI - React Build
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-
-    if: >-
-      github.event_name == 'workflow_dispatch' ||
-      (github.event_name == 'push' && (
-        github.ref == 'refs/heads/main' ||
-        startsWith(github.ref, 'refs/heads/feature/') ||
-        startsWith(github.ref, 'refs/heads/bugfix/')
-      ))
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-
-      - name: Install frontend dependencies
-        working-directory: frontend
-        run: npm ci
-
-      - name: Build React frontend
-        working-directory: frontend
-        run: npm run build
-
-  # ==========================================
-  # 4. DOCKER BACKEND - PACK AND PUSH
+  # 3. DOCKER BACKEND PACK AND PUSH
   # ==========================================
   docker-backend:
     name: Docker Backend Pack and Push
@@ -174,7 +143,7 @@ jobs:
       - changes
 
     if: >-
-      (github.event_name == 'workflow_dispatch') ||
+      github.event_name == 'workflow_dispatch' ||
       (
         github.event_name == 'push' &&
         github.ref == 'refs/heads/main' &&
@@ -205,7 +174,7 @@ jobs:
             artur310/lab1-api:${{ github.sha }}
 
   # ==========================================
-  # 5. DOCKER FRONTEND - PACK AND PUSH
+  # 4. DOCKER FRONTEND PACK AND PUSH
   # ==========================================
   docker-frontend:
     name: Docker Frontend Pack and Push
@@ -214,10 +183,9 @@ jobs:
 
     needs:
       - changes
-      - build-frontend
 
     if: >-
-      (github.event_name == 'workflow_dispatch') ||
+      github.event_name == 'workflow_dispatch' ||
       (
         github.event_name == 'push' &&
         (
@@ -257,7 +225,7 @@ jobs:
             artur310/lab1-frontend:${{ github.sha }}
 
       # ----------------------------------------
-      # FEATURE / BUGFIX - BUILD ARTIFACT
+      # FEATURE / BUGFIX - EXPORT ARTIFACT
       # ----------------------------------------
       - name: Build Frontend and Export Docker Artifact
         if: github.ref != 'refs/heads/main'
@@ -275,10 +243,9 @@ jobs:
         with:
           name: frontend-docker-image
           path: /tmp/frontend-image.tar
-          retention-days: 7
 
   # ==========================================
-  # 6. DOCKER MIGRATIONS - PACK AND PUSH
+  # 5. DOCKER MIGRATIONS PACK AND PUSH
   # ==========================================
   docker-migrations:
     name: Docker Migrations Pack and Push
@@ -289,7 +256,7 @@ jobs:
       - changes
 
     if: >-
-      (github.event_name == 'workflow_dispatch') ||
+      github.event_name == 'workflow_dispatch' ||
       (
         github.event_name == 'push' &&
         github.ref == 'refs/heads/main' &&
@@ -320,7 +287,7 @@ jobs:
             artur310/lab1-migrations:${{ github.sha }}
 
   # ==========================================
-  # 7. PIPELINE SUMMARY
+  # 6. PIPELINE SUMMARY
   # ==========================================
   pipeline-summary:
     name: CI/CD Pipeline Summary
@@ -328,7 +295,6 @@ jobs:
 
     needs:
       - test-backend
-      - build-frontend
       - docker-backend
       - docker-frontend
       - docker-migrations
@@ -338,12 +304,11 @@ jobs:
     steps:
       - name: Display Pipeline Results
         run: |
-          echo "=================================="
-          echo "       CI/CD PIPELINE RESULTS"
-          echo "=================================="
+          echo "======================================"
+          echo "          CI/CD PIPELINE"
+          echo "======================================"
           echo "Backend Tests: ${{ needs.test-backend.result }}"
-          echo "Frontend Build: ${{ needs.build-frontend.result }}"
           echo "Docker Backend: ${{ needs.docker-backend.result }}"
           echo "Docker Frontend: ${{ needs.docker-frontend.result }}"
           echo "Docker Migrations: ${{ needs.docker-migrations.result }}"
-          echo "=================================="
+          echo "======================================"
